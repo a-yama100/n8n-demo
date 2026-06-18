@@ -239,7 +239,7 @@ function SeoResults({ result }: { result: SeoResult }) {
             <div className="mt-3 text-xs text-slate-500">
               Internal links suggested:{" "}
               {result.internal_links.map((l) => (
-                <code key={l} className="font-mono text-[11px] text-slate-600">
+                <code key={l} className="font-mono text-[11px] text-slate-600 break-all">
                   {l}{" "}
                 </code>
               ))}
