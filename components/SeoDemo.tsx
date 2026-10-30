@@ -74,7 +74,7 @@ export function SeoDemo() {
       {/* Form */}
       <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-2">
-          <input
+          <input aria-label="Topic or target keyword" name="topic" autoComplete="off"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             maxLength={160}
@@ -82,7 +82,7 @@ export function SeoDemo() {
             onKeyDown={(e) => e.key === "Enter" && run()}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-n8n"
           />
-          <input
+          <input aria-label="Target audience (optional)" name="audience" autoComplete="off"
             value={audience}
             onChange={(e) => setAudience(e.target.value)}
             maxLength={80}

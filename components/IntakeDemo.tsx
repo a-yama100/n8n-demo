@@ -128,21 +128,21 @@ export function IntakeDemo() {
       {/* Form */}
       <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-3">
-          <input
+          <input aria-label="Name (optional)" name="name" autoComplete="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={120}
             placeholder="Name (optional)"
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-n8n"
           />
-          <input
+          <input aria-label="Company (optional)" name="company" autoComplete="organization"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
             maxLength={120}
             placeholder="Company (optional)"
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-n8n"
           />
-          <input
+          <input aria-label="Email (optional)" name="email" autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             maxLength={160}
@@ -150,7 +150,7 @@ export function IntakeDemo() {
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-n8n"
           />
         </div>
-        <textarea
+        <textarea aria-label="Customer enquiry" name="message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           maxLength={1200}
