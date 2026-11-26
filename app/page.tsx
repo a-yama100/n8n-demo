@@ -1,4 +1,5 @@
 import { Demos } from "@/components/Demos";
+import { itYears } from "@/lib/profileYears";
 
 export default function Home() {
   return (
@@ -11,22 +12,30 @@ export default function Home() {
         <h1 className="mt-4 text-3xl sm:text-4xl font-bold text-slate-900">
           n8n Automation Demo
         </h1>
-        <p className="mt-3 text-slate-600 max-w-2xl mx-auto">
-          Two production-style <strong>n8n</strong> workflows you can run right here in
-          the browser. Watch each node light up as data flows from a trigger, through an
-          AI step, out to a database, Slack, a CMS and email — exactly how these
-          automations run for real clients, only wired into a sandbox.
+        {/* eslint-disable-next-line @next/next/no-img-element -- 同じ origin の静的ファイル。next/image の最適化は使わない */}
+        <img
+          src="/media/hero.webp"
+          alt="Illustration of an automated workflow: a contact form message passes through AI, routing, database, chat and email steps while an office worker watches"
+          width={1600}
+          height={679}
+          className="mt-6 aspect-[1600/679] w-full rounded-xl object-cover"
+        />
+        <p className="mt-6 text-slate-600 max-w-2xl mx-auto">
+          Try two real-world <strong>n8n</strong> workflows right here in your browser.
+          Each step lights up as the data moves from the trigger, through an AI step, and
+          on to a database, Slack, a CMS and email. They work the same way as automations
+          built for real clients, but run in a safe sandbox.
         </p>
       </section>
 
       {/* Simulation disclosure */}
       <div className="mb-8 rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        <strong className="text-slate-800">Self-contained demo.</strong> The
-        orchestration, routing logic and output structure mirror a real n8n workflow.
-        The AI step is reproduced deterministically so the demo runs instantly with{" "}
-        <strong>no API keys and no cost</strong> — in production it is an LLM (Claude)
-        call inside an n8n node, and the database/Slack/WordPress steps are live
-        integrations.
+        <strong className="text-slate-800">How this demo works.</strong> The steps,
+        routing rules and output match a real n8n workflow. The AI step uses fixed rules
+        instead of a live AI model, so the demo runs instantly with{" "}
+        <strong>no API keys and no cost</strong>. In a real project, that step calls an
+        AI model (Claude) from inside n8n, and the database, Slack and WordPress steps
+        connect to the real services.
       </div>
 
       {/* Demos */}
@@ -35,29 +44,29 @@ export default function Home() {
       {/* Why this matters */}
       <section className="mt-16 border-t border-slate-200 pt-8">
         <h2 className="text-lg font-semibold text-slate-900">
-          Not just &ldquo;can use n8n&rdquo; — system integration
+          More than placing nodes: connecting your whole system
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          The hard part of automation isn&apos;t dragging nodes onto a canvas. It&apos;s
-          the integration discipline around them.
+          The hard part of automation isn&apos;t placing nodes on a canvas. It&apos;s
+          making the workflow fit cleanly with the rest of your tools.
         </p>
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {[
             [
               "n8n as the hub, not the whole system",
-              "Workflows are triggered by a real Next.js front end and fan out to Supabase, Slack, Gmail and WordPress — n8n orchestrates, it doesn't live in isolation.",
+              "Workflows start from a real Next.js website and pass data on to Supabase, Slack, Gmail and WordPress. n8n coordinates the steps; it doesn't work in isolation.",
             ],
             [
-              "AI with a strict output contract",
-              "The AI node returns a fixed schema (category, priority, entities, routing) so the downstream Switch, CRM insert and Slack payload are deterministic and testable — not free text.",
+              "AI output in a fixed format",
+              "The AI step always returns the same fields (category, priority, key details, routing), never free-form text. So the steps after it (the Switch, the CRM record and the Slack message) behave predictably and can be tested.",
             ],
             [
-              "Idempotent, reviewable, safe",
-              "The content pipeline publishes a draft for human review rather than auto-posting blindly; the intake flow assigns owners and SLAs so nothing silently falls through.",
+              "Safe and easy to review",
+              "The content workflow saves a draft for a person to check instead of publishing it automatically. The intake workflow assigns an owner and a response deadline, so no enquiry gets missed.",
             ],
             [
-              "35 years in IT · IBM-certified AI engineer",
-              "Built by an engineer who pairs n8n with custom Next.js, RAG and API work — so the automation connects cleanly to the rest of your stack.",
+              `${itYears()} years in IT · IBM-certified AI engineer`,
+              "Built by an engineer who combines n8n with custom Next.js, RAG and API work, so the automation connects cleanly to the rest of your systems.",
             ],
           ].map(([title, body]) => (
             <li key={title} className="rounded-lg border border-slate-200 bg-white p-4">
@@ -68,7 +77,7 @@ export default function Home() {
         </ul>
         <p className="mt-6 text-sm text-slate-500">
           Stack: <strong>n8n</strong> · Next.js · Supabase · Slack / Gmail APIs ·
-          WordPress REST · deployed on Vercel. Want this wired into your tools?{" "}
+          WordPress REST · deployed on Vercel. Want this connected to your tools?{" "}
           <a
             href="https://www.phaiworks.com/en"
             className="font-medium text-n8n hover:text-n8n-dark underline"

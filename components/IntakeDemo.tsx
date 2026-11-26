@@ -118,11 +118,12 @@ export function IntakeDemo() {
   return (
     <div>
       <p className="text-sm text-slate-600">
-        A website contact form is the <strong>Webhook trigger</strong>. n8n calls an{" "}
-        <strong>AI Agent</strong> to classify the message and extract structured
-        fields, a <strong>Switch</strong> routes by category, then the lead is written
-        to <strong>Supabase</strong>, the team is pinged in <strong>Slack</strong>, and
-        the sender gets an auto-acknowledgement by <strong>Gmail</strong>.
+        A website contact form acts as the <strong>Webhook trigger</strong>. n8n sends
+        the message to an <strong>AI Agent</strong>, which sorts it and pulls out the
+        key details. A <strong>Switch</strong> then routes it by category: the lead is
+        saved to <strong>Supabase</strong>, the team gets an alert in{" "}
+        <strong>Slack</strong>, and the sender receives an automatic reply by{" "}
+        <strong>Gmail</strong>.
       </p>
 
       {/* Form */}

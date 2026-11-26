@@ -4,7 +4,7 @@ export function Header() {
       <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <a
-            href="https://www.phaiworks.com/"
+            href="https://www.phaiworks.com/en"
             className="font-bold text-slate-900 hover:text-n8n transition-colors"
           >
             PH AI Works

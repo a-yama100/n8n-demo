@@ -63,12 +63,12 @@ export function SeoDemo() {
   return (
     <div>
       <p className="text-sm text-slate-600">
-        A <strong>Schedule</strong> trigger runs daily. n8n makes an{" "}
-        <strong>HTTP Request</strong> to pull trend/SERP data, an{" "}
-        <strong>AI Writer</strong> drafts the article, an <strong>SEO Meta</strong> step
-        generates the title, slug and schema, then a <strong>WordPress</strong> draft is
-        created and a summary is sent over <strong>Email + LINE</strong> for human
-        review before publishing.
+        A <strong>Schedule</strong> trigger runs every day. n8n uses an{" "}
+        <strong>HTTP Request</strong> to collect trend and search-result data, and an{" "}
+        <strong>AI Writer</strong> drafts the article. An <strong>SEO Meta</strong> step
+        creates the title, URL slug and structured data. The post is then saved as a{" "}
+        <strong>WordPress</strong> draft, and a summary goes out by{" "}
+        <strong>Email + LINE</strong> so a person can review it before publishing.
       </p>
 
       {/* Form */}

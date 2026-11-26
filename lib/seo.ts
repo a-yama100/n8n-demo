@@ -84,7 +84,7 @@ export function generateSeoPlan(input: SeoInput): SeoResult {
   const titled = topic.replace(/\b\w/g, (c) => c.toUpperCase());
   const seo_title = truncate(
     search_intent === "commercial"
-      ? `${titled}: What It Costs and How to Choose (2026)`
+      ? `${titled}: What It Costs and How to Choose (${new Date().getFullYear()})`
       : `${titled}: A Practical Guide for ${audience ? capitalize(audience) : "Teams"}`,
     60
   );

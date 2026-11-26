@@ -4,8 +4,8 @@ export function Footer() {
     <footer className="border-t border-slate-200 bg-white mt-auto">
       <div className="max-w-5xl mx-auto px-4 py-8 text-center space-y-3">
         <p className="text-slate-500 text-sm font-medium">
-          Self-contained demonstration of an n8n automation workflow. The AI step is
-          reproduced deterministically — no live LLM call, no API keys, no cost.
+          A standalone demo of n8n automation workflows. The AI step uses fixed rules:
+          no live AI calls, no API keys, no cost.
         </p>
         <p className="text-slate-400 text-xs max-w-2xl mx-auto">
           Not affiliated with, endorsed by, or sponsored by n8n GmbH.
