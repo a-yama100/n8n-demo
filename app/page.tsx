@@ -20,7 +20,7 @@ export default function Home() {
           height={679}
           className="mt-6 aspect-[1600/679] w-full rounded-xl object-cover"
         />
-        <p className="mt-6 text-slate-600 max-w-2xl mx-auto">
+        <p className="mt-6 text-slate-600">
           Try two real-world <strong>n8n</strong> workflows right here in your browser.
           Each step lights up as the data moves from the trigger, through an AI step, and
           on to a database, Slack, a CMS and email. They work the same way as automations
