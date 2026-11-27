@@ -3,15 +3,13 @@
 import { useState } from "react";
 import { IntakeDemo } from "./IntakeDemo";
 import { SeoDemo } from "./SeoDemo";
+import { TABS as TAB_LABELS, type Lang } from "@/lib/content";
 
-const TABS = [
-  { id: "intake", label: "AI Intake Automation" },
-  { id: "seo", label: "SEO Content Automation" },
-] as const;
+const TABS = [{ id: "intake" }, { id: "seo" }] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
-export function Demos() {
+export function Demos({ lang }: { lang: Lang }) {
   const [tab, setTab] = useState<TabId>("intake");
 
   return (
@@ -28,12 +26,14 @@ export function Demos() {
                 : "text-slate-500 hover:text-slate-700")
             }
           >
-            {t.label}
+            {TAB_LABELS[lang][t.id]}
           </button>
         ))}
       </div>
 
-      <div className="mt-6">{tab === "intake" ? <IntakeDemo /> : <SeoDemo />}</div>
+      <div className="mt-6">
+        {tab === "intake" ? <IntakeDemo lang={lang} /> : <SeoDemo lang={lang} />}
+      </div>
     </div>
   );
 }

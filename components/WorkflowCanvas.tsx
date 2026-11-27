@@ -1,6 +1,7 @@
 "use client";
 
 import { KIND_ACCENT, type Workflow } from "@/lib/workflows";
+import type { Lang } from "@/lib/content";
 
 const NODE_W = 138;
 const NODE_H = 58;
@@ -9,9 +10,10 @@ type Props = {
   workflow: Workflow;
   /** How many sequence steps have executed. -1 = idle, sequence.length = all done. */
   activeStep: number;
+  lang: Lang;
 };
 
-export function WorkflowCanvas({ workflow, activeStep }: Props) {
+export function WorkflowCanvas({ workflow, activeStep, lang }: Props) {
   const seqIndex = (id: string) => workflow.sequence.indexOf(id);
   const byId = (id: string) => workflow.nodes.find((n) => n.id === id)!;
 
@@ -90,10 +92,10 @@ export function WorkflowCanvas({ workflow, activeStep }: Props) {
                 <span className="text-lg leading-none">{n.icon}</span>
                 <span className="min-w-0">
                   <span className="block truncate text-xs font-semibold text-slate-800">
-                    {n.title}
+                    {lang === "ja" ? n.title_ja ?? n.title : n.title}
                   </span>
                   <span className="block truncate text-[10px] text-slate-400">
-                    {n.subtitle}
+                    {lang === "ja" ? n.subtitle_ja : n.subtitle}
                   </span>
                 </span>
               </div>

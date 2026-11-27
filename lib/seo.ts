@@ -4,6 +4,10 @@
 // WordPress draft. Here the structured output is produced deterministically from the
 // topic so the demo runs instantly with no API key. The pipeline stages (schedule →
 // fetch → write → meta → publish → report) mirror the real workflow.
+// 日本語のページから呼んだとき（lang = "ja"）は、タイトル・説明・構成・報告を日本語で返す。
+// 日本語の記事は語数ではなく文字数で分量を示す（word_count_target は文字数になる）。
+
+import type { Lang } from "./content";
 
 export type SeoInput = {
   topic: string;
@@ -64,7 +68,8 @@ function truncate(s: string, n: number): string {
   return s.slice(0, n - 1).replace(/\s+\S*$/, "") + "…";
 }
 
-export function generateSeoPlan(input: SeoInput): SeoResult {
+export function generateSeoPlan(input: SeoInput, lang: Lang = "en"): SeoResult {
+  if (lang === "ja") return generateSeoPlanJa(input);
   const topic = (input.topic || "").trim();
   const audience = (input.audience || "").trim();
   const tokens = keywordTokens(topic);
@@ -155,4 +160,103 @@ export function generateSeoPlan(input: SeoInput): SeoResult {
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// --- 日本語のページ向けの出力 ---
+export const INTENT_LABELS_JA: Record<SeoResult["search_intent"], string> = {
+  informational: "情報収集",
+  commercial: "比較検討",
+  transactional: "申し込み",
+};
+
+function detectIntentJa(topic: string): SeoResult["search_intent"] {
+  if (/(方法|やり方|とは|仕組み)/.test(topic)) return "informational";
+  if (/(料金|費用|価格|比較|おすすめ|依頼|代行|ツール|ソフト|サービス|安い)/.test(topic)) return "commercial";
+  if (/(無料|ダウンロード|テンプレート|登録|デモ)/.test(topic)) return "transactional";
+  return detectIntent(topic);
+}
+
+function cut(s: string, n: number): string {
+  return s.length <= n ? s : s.slice(0, n - 1) + "…";
+}
+
+function generateSeoPlanJa(input: SeoInput): SeoResult {
+  const topic = (input.topic || "").trim();
+  const audience = (input.audience || "").trim();
+  const primary_keyword = topic.toLowerCase();
+
+  const secondary_keywords = [
+    `${topic} とは`,
+    `${topic} やり方`,
+    `${topic} 事例`,
+    `${topic} 注意点`,
+    `${topic} ${audience || "中小企業"}`,
+  ];
+
+  const search_intent = detectIntentJa(topic);
+  const year = new Date().getFullYear();
+
+  const seo_title = cut(
+    search_intent === "commercial"
+      ? `${topic}の費用と選び方【${year}年版】`
+      : `${topic}の実践ガイド${audience ? `【${audience}向け】` : ""}`,
+    40
+  );
+
+  const meta_description = cut(
+    `${audience ? `${audience}に向けて、` : ""}${topic}の基本や活用の方法、導入の手順を、実例とともに解説します。`,
+    120
+  );
+
+  const slug = slugify(topic) || "untitled-post";
+
+  const outline: SeoResult["outline"] = [
+    { h2: `${topic}とは`, note: "基本的な意味と概要" },
+    { h2: `${topic}が役立つ場面`, note: "活用の事例、期待できる効果、向いていないケース" },
+    { h2: "導入の手順", note: "実例を使って、手順を一つずつ説明" },
+    { h2: "よくある失敗と避け方", note: "読者が持ちやすい疑問と注意点" },
+    { h2: "ツールの選び方と導入の進め方", note: "ツールの比較と、導入に向けた具体的な手順" },
+  ];
+
+  const intro_paragraph =
+    `${topic}について、基本的な内容や具体的な活用の方法を知りたい方も多いのではないでしょうか。` +
+    `この記事では、${audience ? `${audience}の方に向けて、` : ""}${topic}の基本と具体的な活用の方法を解説します。` +
+    "さらに、具体的な事例を交えながら、実践するための手順を紹介します。";
+
+  const internal_links = [`/blog/${slug}-basics`, `/services`, `/blog/case-studies`];
+
+  const featured_image_prompt = `Clean, modern editorial illustration representing "${topic}", flat vector style, brand accent colors, no text`;
+
+  // 日本語の記事の分量（文字数）
+  const word_count_target = search_intent === "commercial" ? 6000 : 5000;
+
+  const publish = {
+    platform: "WordPress（REST API）",
+    status: "下書き（担当者の確認待ち）",
+    url: `https://example-blog.com/?p=preview#${slug}`,
+  };
+
+  const report = {
+    channels: ["メール", "LINE"],
+    summary:
+      `WordPress に記事「${cut(seo_title, 30)}」の下書きを作成しました。目標文字数は ${word_count_target.toLocaleString("ja-JP")}字、` +
+      `見出しは ${outline.length}件、対象のキーワードは ${secondary_keywords.length}件です。` +
+      `担当者の確認を待っています。想定する検索意図は「${INTENT_LABELS_JA[search_intent]}」です。`,
+  };
+
+  return {
+    primary_keyword,
+    secondary_keywords,
+    search_intent,
+    seo_title,
+    meta_description,
+    slug,
+    outline,
+    intro_paragraph,
+    internal_links,
+    featured_image_prompt,
+    word_count_target,
+    publish,
+    report,
+  };
 }

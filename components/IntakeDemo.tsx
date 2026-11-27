@@ -4,6 +4,7 @@ import { useState } from "react";
 import { WorkflowCanvas } from "./WorkflowCanvas";
 import { INTAKE_WORKFLOW } from "@/lib/workflows";
 import type { IntakeResult } from "@/lib/intake";
+import { RUN_UI, type Lang } from "@/lib/content";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -15,7 +16,7 @@ type Example = {
   message: string;
 };
 
-const EXAMPLES: Example[] = [
+const EXAMPLES_EN: Example[] = [
   {
     label: "🟢 Hot lead (n8n project)",
     name: "Maria Santos",
@@ -57,7 +58,72 @@ const EXAMPLES: Example[] = [
   },
 ];
 
-export function IntakeDemo() {
+// 日本語のページの例（人名・会社名・メールアドレス・金額は英語の例と同じ）
+const EXAMPLES_JA: Example[] = [
+  {
+    label: "🟢 自動化の開発の相談",
+    name: "Maria Santos",
+    company: "Cebu Logistics Co.",
+    email: "maria@cebulogistics.example",
+    message:
+      "はじめまして。当社のサイトには毎日数十件の問い合わせがあり、すべて同じ受信トレイに届きます。n8n のワークフローで、届いた問い合わせを AI で分類し、有望な見込み客を CRM に登録して、営業チームに Slack で知らせる仕組みを作りたいと考えています。予算は $4,000 程度で、来月から開発を始めたいと考えています。",
+  },
+  {
+    label: "🔴 緊急の不具合の対応依頼",
+    name: "Tom",
+    company: "",
+    email: "tom@shop.example",
+    message:
+      "至急対応してください。今朝から決済の画面がまったく動かず、お客様が支払いを完了できない状態です。売上にも影響が出ていて、とても困っています。すぐに直してください！",
+  },
+  {
+    label: "💳 請求の問い合わせ",
+    name: "Aiko",
+    company: "",
+    email: "aiko@example.com",
+    message:
+      "今月分のサブスクリプションの料金が二重に請求されているようです。ご確認のうえ、重複して支払った分を返金していただけますか。請求書番号は INV-2231 です。",
+  },
+  {
+    label: "🤝 提携の提案",
+    name: "David Lin",
+    company: "CloudPay",
+    email: "david@cloudpay.example",
+    message:
+      "当社はフィンテックの SaaS 企業です。貴社の AI 自動化サービスを当社でも販売できるよう、販売パートナーとしての提携を検討しています。どなたにご相談すればよいでしょうか。",
+  },
+  {
+    label: "🗑️ スパム",
+    name: "",
+    company: "",
+    email: "",
+    message: "今すぐチェック http://promo.example/win",
+  },
+];
+
+const TEXT = {
+  ja: {
+    name: "お名前（任意）",
+    company: "会社名（任意）",
+    email: "メールアドレス（任意）",
+    messageLabel: "お客様からの問い合わせ",
+    messagePlaceholder: "お客様からの問い合わせの内容を入力してください…",
+    empty: "問い合わせの内容を入力するか、サンプルを選んでからワークフローを実行してください。",
+  },
+  en: {
+    name: "Name (optional)",
+    company: "Company (optional)",
+    email: "Email (optional)",
+    messageLabel: "Customer enquiry",
+    messagePlaceholder: "Paste a customer enquiry here…",
+    empty: "Enter a message (or pick an example) to run the workflow.",
+  },
+} as const;
+
+export function IntakeDemo({ lang }: { lang: Lang }) {
+  const t = TEXT[lang];
+  const ui = RUN_UI[lang];
+  const EXAMPLES = lang === "ja" ? EXAMPLES_JA : EXAMPLES_EN;
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
@@ -81,7 +147,7 @@ export function IntakeDemo() {
     if (running) return;
     const msg = message.trim();
     if (!msg) {
-      setError("Enter a message (or pick an example) to run the workflow.");
+      setError(t.empty);
       return;
     }
     setRunning(true);
@@ -89,13 +155,13 @@ export function IntakeDemo() {
     setResult(null);
     setStep(-1);
 
-    const pending = fetch("/api/intake", {
+    const pending = fetch(`/api/intake?lang=${lang}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, company, email, message: msg }),
     })
       .then(async (r) => ({ ok: r.ok, data: await r.json() }))
-      .catch(() => ({ ok: false, data: { error: "Network error." } }));
+      .catch(() => ({ ok: false, data: { error: ui.networkError } }));
 
     const seq = INTAKE_WORKFLOW.sequence;
     for (let i = 0; i < seq.length; i++) {
@@ -105,7 +171,7 @@ export function IntakeDemo() {
 
     const { ok, data } = await pending;
     if (!ok) {
-      setError(data.error || "Something went wrong.");
+      setError(data.error || ui.genericError);
       setStep(-1);
       setRunning(false);
       return;
@@ -117,46 +183,64 @@ export function IntakeDemo() {
 
   return (
     <div>
-      <p className="text-sm text-slate-600">
-        A website contact form acts as the <strong>Webhook trigger</strong>. n8n sends
-        the message to an <strong>AI Agent</strong>, which sorts it and pulls out the
-        key details. A <strong>Switch</strong> then routes it by category: the lead is
-        saved to <strong>Supabase</strong>, the team gets an alert in{" "}
-        <strong>Slack</strong>, and the sender receives an automatic reply by{" "}
-        <strong>Gmail</strong>.
-      </p>
+      {lang === "ja" ? (
+        <p className="text-sm text-slate-600">
+          {"実際のシステムでは、サイトの問い合わせフォームからの送信を "}
+          <strong>Webhook</strong>
+          {" で受け付けます。"}
+          <strong>AI Agent</strong>
+          {" が問い合わせを分類し、対応に必要な情報を取り出します。続いて "}
+          <strong>Switch</strong>
+          {" が分類ごとに振り分け、"}
+          <strong>Supabase</strong>
+          {" への登録、"}
+          <strong>Slack</strong>
+          {" での通知、"}
+          <strong>Gmail</strong>
+          {" での受付メールの下書きの作成を行います。"}
+        </p>
+      ) : (
+        <p className="text-sm text-slate-600">
+          A website contact form acts as the <strong>Webhook trigger</strong>. n8n sends
+          the message to an <strong>AI Agent</strong>, which sorts it and pulls out the
+          key details. A <strong>Switch</strong> then routes it by category: the lead is
+          saved to <strong>Supabase</strong>, the team gets an alert in{" "}
+          <strong>Slack</strong>, and the sender receives an automatic reply by{" "}
+          <strong>Gmail</strong>.
+        </p>
+      )}
 
       {/* Form */}
       <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-3">
-          <input aria-label="Name (optional)" name="name" autoComplete="name"
+          <input aria-label={t.name} name="name" autoComplete="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={120}
-            placeholder="Name (optional)"
+            placeholder={t.name}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-n8n"
           />
-          <input aria-label="Company (optional)" name="company" autoComplete="organization"
+          <input aria-label={t.company} name="company" autoComplete="organization"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
             maxLength={120}
-            placeholder="Company (optional)"
+            placeholder={t.company}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-n8n"
           />
-          <input aria-label="Email (optional)" name="email" autoComplete="email"
+          <input aria-label={t.email} name="email" autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             maxLength={160}
-            placeholder="Email (optional)"
+            placeholder={t.email}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-n8n"
           />
         </div>
-        <textarea aria-label="Customer enquiry" name="message"
+        <textarea aria-label={t.messageLabel} name="message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           maxLength={1200}
           rows={4}
-          placeholder="Paste a customer enquiry here…"
+          placeholder={t.messagePlaceholder}
           className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-n8n"
         />
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -165,9 +249,9 @@ export function IntakeDemo() {
             disabled={running}
             className="rounded-lg bg-n8n px-5 py-2.5 text-sm font-medium text-white hover:bg-n8n-dark disabled:opacity-50 transition-colors"
           >
-            {running ? "Running workflow…" : "▶ Run workflow"}
+            {running ? ui.running : ui.run}
           </button>
-          <span className="text-xs text-slate-400">or try an example:</span>
+          <span className="text-xs text-slate-400">{ui.orExample}</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           {EXAMPLES.map((ex) => (
@@ -192,21 +276,21 @@ export function IntakeDemo() {
       <div className="mt-6">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-700">
-            Workflow canvas
+            {ui.canvas}
           </h3>
           <span className="text-xs text-slate-400">
             {step < 0
-              ? "idle"
+              ? ui.idle
               : result
-              ? "✓ executed · 6 nodes"
-              : `running… node ${Math.min(step + 1, INTAKE_WORKFLOW.sequence.length)}/6`}
+              ? ui.done
+              : ui.step(Math.min(step + 1, INTAKE_WORKFLOW.sequence.length), 6)}
           </span>
         </div>
-        <WorkflowCanvas workflow={INTAKE_WORKFLOW} activeStep={step} />
+        <WorkflowCanvas workflow={INTAKE_WORKFLOW} activeStep={step} lang={lang} />
       </div>
 
       {/* Results */}
-      {result && <IntakeResults result={result} />}
+      {result && <IntakeResults result={result} lang={lang} />}
     </div>
   );
 }
@@ -219,7 +303,55 @@ function Badge({ tone, children }: { tone: string; children: React.ReactNode }) 
   );
 }
 
-function IntakeResults({ result }: { result: IntakeResult }) {
+const RESULT_TEXT = {
+  ja: {
+    agent: "🤖 AI Agent · 問い合わせの分析結果",
+    priority: (p: IntakeResult["priority"]) => `優先度: ${({ high: "高", medium: "中", low: "低" } as const)[p]}`,
+    sentiment: (s: IntakeResult["sentiment"]) => `感情の判定: ${({ positive: "肯定的", neutral: "中立", negative: "否定的" } as const)[s]}`,
+    language: (l: string) => `言語: ${l}`,
+    extracted: "抽出した情報",
+    services: "サービス:",
+    budget: "予算:",
+    timeline: "時期:",
+    company: "会社:",
+    routing: "振り分け",
+    slack: "Slack:",
+    crmStage: "CRM のステータス:",
+    assignee: "担当:",
+    sla: "対応期限:",
+    hours: (h: number) => `${h}時間`,
+    supabaseBefore: "🗄️ Supabase · ",
+    supabaseAfter: " テーブルに1件を登録",
+    slackPosted: (c: string) => `💬 Slack · ${c} への通知`,
+    gmail: "✉️ Gmail · 受付メールの下書き",
+    join: "、",
+  },
+  en: {
+    agent: "🤖 AI Agent · structured output",
+    priority: (p: IntakeResult["priority"]) => `priority: ${p}`,
+    sentiment: (s: IntakeResult["sentiment"]) => `sentiment: ${s}`,
+    language: (l: string) => `lang: ${l}`,
+    extracted: "Extracted",
+    services: "Services:",
+    budget: "Budget:",
+    timeline: "Timeline:",
+    company: "Company:",
+    routing: "Routing decision",
+    slack: "Slack:",
+    crmStage: "CRM stage:",
+    assignee: "Assignee:",
+    sla: "SLA:",
+    hours: (h: number) => `${h}h`,
+    supabaseBefore: "🗄️ Supabase · row inserted into ",
+    supabaseAfter: "",
+    slackPosted: (c: string) => `💬 Slack · posted to ${c}`,
+    gmail: "✉️ Gmail · AI-drafted auto-acknowledgement",
+    join: ", ",
+  },
+};
+
+function IntakeResults({ result, lang }: { result: IntakeResult; lang: Lang }) {
+  const r = RESULT_TEXT[lang];
   const priorityTone =
     result.priority === "high"
       ? "bg-red-100 text-red-700"
@@ -238,56 +370,56 @@ function IntakeResults({ result }: { result: IntakeResult }) {
       {/* AI Agent output */}
       <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-5">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-violet-700">
-          🤖 AI Agent · structured output
+          {r.agent}
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge tone="bg-violet-100 text-violet-700">{result.category_label}</Badge>
-          <Badge tone={priorityTone}>priority: {result.priority}</Badge>
-          <Badge tone={sentimentTone}>sentiment: {result.sentiment}</Badge>
-          <Badge tone="bg-slate-100 text-slate-600">lang: {result.language}</Badge>
+          <Badge tone={priorityTone}>{r.priority(result.priority)}</Badge>
+          <Badge tone={sentimentTone}>{r.sentiment(result.sentiment)}</Badge>
+          <Badge tone="bg-slate-100 text-slate-600">{r.language(result.language)}</Badge>
         </div>
         <p className="mt-3 text-sm text-slate-700">{result.summary}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <div className="text-xs font-semibold text-slate-500">Extracted</div>
+            <div className="text-xs font-semibold text-slate-500">{r.extracted}</div>
             <ul className="mt-1 space-y-1 text-sm text-slate-700">
               <li>
-                <span className="text-slate-400">Services:</span>{" "}
+                <span className="text-slate-400">{r.services}</span>{" "}
                 {result.entities.requested_services.length
-                  ? result.entities.requested_services.join(", ")
+                  ? result.entities.requested_services.join(r.join)
                   : "—"}
               </li>
               <li>
-                <span className="text-slate-400">Budget:</span>{" "}
+                <span className="text-slate-400">{r.budget}</span>{" "}
                 {result.entities.budget ?? "—"}
               </li>
               <li>
-                <span className="text-slate-400">Timeline:</span>{" "}
+                <span className="text-slate-400">{r.timeline}</span>{" "}
                 {result.entities.timeline ?? "—"}
               </li>
               <li>
-                <span className="text-slate-400">Company:</span>{" "}
+                <span className="text-slate-400">{r.company}</span>{" "}
                 {result.entities.company ?? "—"}
               </li>
             </ul>
           </div>
           <div>
-            <div className="text-xs font-semibold text-slate-500">Routing decision</div>
+            <div className="text-xs font-semibold text-slate-500">{r.routing}</div>
             <ul className="mt-1 space-y-1 text-sm text-slate-700">
               <li>
-                <span className="text-slate-400">Slack:</span>{" "}
+                <span className="text-slate-400">{r.slack}</span>{" "}
                 {result.routing.slack_channel}
               </li>
               <li>
-                <span className="text-slate-400">CRM stage:</span>{" "}
+                <span className="text-slate-400">{r.crmStage}</span>{" "}
                 {result.routing.crm_stage}
               </li>
               <li>
-                <span className="text-slate-400">Assignee:</span>{" "}
+                <span className="text-slate-400">{r.assignee}</span>{" "}
                 {result.routing.assignee}
               </li>
               <li>
-                <span className="text-slate-400">SLA:</span> {result.routing.sla_hours}h
+                <span className="text-slate-400">{r.sla}</span> {r.hours(result.routing.sla_hours)}
               </li>
             </ul>
           </div>
@@ -298,7 +430,7 @@ function IntakeResults({ result }: { result: IntakeResult }) {
         {/* Supabase row */}
         <div className="rounded-xl border border-emerald-200 bg-white p-5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-            🗄️ Supabase · row inserted into <code className="font-mono">leads</code>
+            {r.supabaseBefore}<code className="font-mono">leads</code>{r.supabaseAfter}
           </div>
           <pre className="mt-3 overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs leading-relaxed text-slate-100">
             {JSON.stringify(result.crm_record, null, 2)}
@@ -308,7 +440,7 @@ function IntakeResults({ result }: { result: IntakeResult }) {
         {/* Slack message */}
         <div className="rounded-xl border border-indigo-200 bg-white p-5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">
-            💬 Slack · posted to {result.routing.slack_channel}
+            {r.slackPosted(result.routing.slack_channel)}
           </div>
           <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 font-sans text-sm leading-relaxed text-slate-700">
             {result.slack_message}
@@ -319,7 +451,7 @@ function IntakeResults({ result }: { result: IntakeResult }) {
       {/* Suggested reply */}
       <div className="rounded-xl border border-teal-200 bg-white p-5">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-teal-700">
-          ✉️ Gmail · AI-drafted auto-acknowledgement
+          {r.gmail}
         </div>
         <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
           {result.suggested_reply}

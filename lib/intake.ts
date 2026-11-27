@@ -4,6 +4,10 @@
 // deterministically from keyword signals so the demo runs instantly, with no API
 // key and no cost. The routing, CRM record and Slack payload that follow are the
 // real n8n logic — only the model call is simulated.
+// 日本語のページから呼んだとき（lang = "ja"）は、要約・返信・Slack の文・ラベルを日本語で返す。
+// 分類の判定（キーワード）は言語に関係なく同じ。
+
+import type { Lang } from "./content";
 
 export type IntakeInput = {
   name?: string;
@@ -53,29 +57,40 @@ const CATEGORY_LABELS: Record<IntakeCategory, string> = {
   spam_other: "Spam / other",
 };
 
+const CATEGORY_LABELS_JA: Record<IntakeCategory, string> = {
+  sales_lead: "営業の相談",
+  technical_support: "技術サポート",
+  billing: "請求",
+  partnership: "提携",
+  recruiting: "採用",
+  spam_other: "スパム・その他",
+};
+
+const PRIORITY_JA: Record<IntakeResult["priority"], string> = { high: "高", medium: "中", low: "低" };
+
 type Rule = { category: IntakeCategory; keywords: string[] };
 
 // Order matters: the first category to score is used as a tie-breaker priority.
 const RULES: Rule[] = [
-  { category: "billing", keywords: ["invoice", "payment", "refund", "charge", "billing", "subscription", "receipt", "overcharged", "請求", "支払", "返金"] },
-  { category: "technical_support", keywords: ["error", "bug", "not working", "doesn't work", "broken", "issue", "problem", "crash", "down", "fix", "fails", "failing", "エラー", "不具合", "動かない"] },
-  { category: "partnership", keywords: ["partner", "partnership", "collaborate", "collaboration", "reseller", "affiliate", "white label", "提携", "協業"] },
-  { category: "recruiting", keywords: ["job", "position", "hiring", "resume", "cv", "apply", "applicant", "candidate", "vacancy", "採用", "求人"] },
-  { category: "sales_lead", keywords: ["quote", "pricing", "price", "hire", "project", "build", "develop", "automation", "automate", "integration", "need a", "looking for", "budget", "cost", "estimate", "proposal", "依頼", "見積", "自動化", "開発"] },
+  { category: "billing", keywords: ["invoice", "payment", "refund", "charge", "billing", "subscription", "receipt", "overcharged", "請求", "支払", "返金", "料金"] },
+  { category: "technical_support", keywords: ["error", "bug", "not working", "doesn't work", "broken", "issue", "problem", "crash", "down", "fix", "fails", "failing", "エラー", "不具合", "動かない", "動かず", "止まって", "直して", "表示されない", "障害"] },
+  { category: "partnership", keywords: ["partner", "partnership", "collaborate", "collaboration", "reseller", "affiliate", "white label", "提携", "協業", "パートナー", "再販"] },
+  { category: "recruiting", keywords: ["job", "position", "hiring", "resume", "cv", "apply", "applicant", "candidate", "vacancy", "採用", "求人", "応募"] },
+  { category: "sales_lead", keywords: ["quote", "pricing", "price", "hire", "project", "build", "develop", "automation", "automate", "integration", "need a", "looking for", "budget", "cost", "estimate", "proposal", "依頼", "見積", "自動化", "開発", "予算", "導入", "作りたい"] },
 ];
 
-const SERVICE_SIGNALS: { label: string; keywords: string[] }[] = [
-  { label: "n8n workflow automation", keywords: ["n8n", "workflow", "automation", "automate", "zapier", "make.com"] },
-  { label: "AI agent / LLM integration", keywords: ["ai agent", "agent", "llm", "gpt", "claude", "openai", "anthropic", "chatbot"] },
-  { label: "RAG / knowledge base", keywords: ["rag", "retrieval", "vector", "pinecone", "embedding", "knowledge base"] },
-  { label: "Next.js web app", keywords: ["next.js", "nextjs", "react", "web app", "website", "frontend", "dashboard"] },
-  { label: "API / system integration", keywords: ["api", "integration", "integrate", "crm", "notion", "slack", "hubspot", "salesforce", "webhook"] },
-  { label: "SEO / content automation", keywords: ["seo", "content", "blog", "article", "wordpress", "ranking"] },
+const SERVICE_SIGNALS: { label: string; label_ja: string; keywords: string[] }[] = [
+  { label: "n8n workflow automation", label_ja: "n8n のワークフロー自動化", keywords: ["n8n", "workflow", "automation", "automate", "zapier", "make.com", "ワークフロー", "自動化"] },
+  { label: "AI agent / LLM integration", label_ja: "AI エージェントの組み込み", keywords: ["ai agent", "agent", "llm", "gpt", "claude", "openai", "anthropic", "chatbot", "ai で", "ai が", "エージェント", "チャットボット"] },
+  { label: "RAG / knowledge base", label_ja: "RAG（社内文書の検索）", keywords: ["rag", "retrieval", "vector", "pinecone", "embedding", "knowledge base", "ナレッジ", "社内文書"] },
+  { label: "Next.js web app", label_ja: "Next.js の Web アプリ", keywords: ["next.js", "nextjs", "react", "web app", "website", "frontend", "dashboard", "サイト", "ウェブアプリ", "ダッシュボード"] },
+  { label: "API / system integration", label_ja: "API とシステムの連携", keywords: ["api", "integration", "integrate", "crm", "notion", "slack", "hubspot", "salesforce", "webhook", "連携"] },
+  { label: "SEO / content automation", label_ja: "SEO と記事作成の自動化", keywords: ["seo", "content", "blog", "article", "wordpress", "ranking", "ブログ", "記事"] },
 ];
 
 const HIGH_PRIORITY = ["urgent", "asap", "immediately", "today", "deadline", "critical", "blocker", "production down", "emergency", "至急", "緊急"];
-const NEGATIVE = ["angry", "frustrated", "frustrating", "disappointed", "terrible", "unacceptable", "not working", "broken", "refund", "complaint", "worst", "annoyed"];
-const POSITIVE = ["great", "love", "thanks", "thank you", "excited", "impressed", "interested", "awesome", "amazing", "looking forward", "助かり", "ありがとう"];
+const NEGATIVE = ["angry", "frustrated", "frustrating", "disappointed", "terrible", "unacceptable", "not working", "broken", "refund", "complaint", "worst", "annoyed", "困って", "ひどい", "納得できない", "不満"];
+const POSITIVE = ["great", "love", "thanks", "thank you", "excited", "impressed", "interested", "awesome", "amazing", "looking forward", "助かり", "ありがとう", "楽しみ", "興味"];
 
 function includesAny(haystack: string, needles: string[]): string[] {
   return needles.filter((n) => haystack.includes(n));
@@ -111,7 +126,7 @@ function extractTimeline(text: string): string | null {
   return null;
 }
 
-export function classifyIntake(input: IntakeInput): IntakeResult {
+export function classifyIntake(input: IntakeInput, lang: Lang = "en"): IntakeResult {
   const raw = (input.message || "").trim();
   const text = raw.toLowerCase();
   const language = detectLanguage(raw);
@@ -154,6 +169,10 @@ export function classifyIntake(input: IntakeInput): IntakeResult {
   const company = input.company?.trim() || null;
   const budget = extractBudget(text);
   const timeline = extractTimeline(raw);
+
+  if (lang === "ja") {
+    return buildJapanese(input, { language, category, priority, sentiment, company, budget, timeline, requested_services });
+  }
 
   // --- Summary ---
   const who = input.name?.trim() || (company ? `Someone at ${company}` : "An anonymous visitor");
@@ -226,6 +245,95 @@ export function classifyIntake(input: IntakeInput): IntakeResult {
     language,
     summary,
     entities: { company, budget, timeline, requested_services },
+    routing,
+    suggested_reply,
+    crm_record,
+    slack_message,
+  };
+}
+
+// --- 日本語のページ向けの出力（分類の結果は英語のページと同じ） ---
+type Decided = {
+  language: IntakeResult["language"];
+  category: IntakeCategory;
+  priority: IntakeResult["priority"];
+  sentiment: IntakeResult["sentiment"];
+  company: string | null;
+  budget: string | null;
+  timeline: string | null;
+  requested_services: string[];
+};
+
+function buildJapanese(input: IntakeInput, d: Decided): IntakeResult {
+  const { language, category, priority, sentiment, company, budget, timeline } = d;
+  const services_ja = SERVICE_SIGNALS.filter((s) => d.requested_services.includes(s.label)).map((s) => s.label_ja);
+  const name = input.name?.trim();
+
+  const who = name ? `${name} 様` : company ? `${company} のご担当者様` : "お名前の入力がない方";
+  const svc = services_ja.length > 0 ? services_ja.slice(0, 2).join("、") : "ご依頼の内容";
+
+  const summaryByCategory: Record<IntakeCategory, string> = {
+    sales_lead: `${who}から、${svc}に関する問い合わせがありました${budget ? `（予算 ${budget}）` : ""}。${timeline ? `希望の時期は${timeline}です。` : ""}`,
+    technical_support: `${who}から不具合に関する問い合わせがありました${services_ja.length ? `（対象: ${svc}）` : ""}。サポートエンジニアによる確認が必要です。`,
+    billing: `${who}から請求に関する問い合わせがありました。経理の担当者による確認が必要です。`,
+    partnership: `${who}から、提携や協業の提案がありました。`,
+    recruiting: `${who}から、求人や採用に関する問い合わせがありました。`,
+    spam_other: "問い合わせの目的を特定できませんでした。スパムや業務に関係のない内容の可能性があります。",
+  };
+  const summary = summaryByCategory[category];
+
+  const routingByCategory: Record<IntakeCategory, IntakeResult["routing"]> = {
+    sales_lead: { slack_channel: "#sales", crm_stage: "新規の見込み客", assignee: "営業担当", sla_hours: 4 },
+    technical_support: { slack_channel: "#support", crm_stage: "サポートの依頼", assignee: "サポートエンジニア", sla_hours: 2 },
+    billing: { slack_channel: "#finance", crm_stage: "請求の問い合わせ", assignee: "経理", sla_hours: 8 },
+    partnership: { slack_channel: "#partnerships", crm_stage: "提携の問い合わせ", assignee: "代表", sla_hours: 24 },
+    recruiting: { slack_channel: "#hiring", crm_stage: "応募者", assignee: "人事", sla_hours: 48 },
+    spam_other: { slack_channel: "#triage", crm_stage: "対象外", assignee: "—", sla_hours: 72 },
+  };
+  const routing = routingByCategory[category];
+
+  const dear = name ? `${name} 様` : "お客様";
+  const replyByCategory: Record<IntakeCategory, string> = {
+    sales_lead: `${dear}\n\n${svc}についてお問い合わせいただき、ありがとうございます。弊社が得意とする分野です。ご要望や実現したいこと${timeline ? `や、${timeline}からというご希望の時期` : ""}について、もう少し詳しくお聞かせください。関連する資料や参考の事例がございましたら、お送りいただけますと幸いです。開発の進め方と概算のお見積もりを、あらためてご案内いたします。`,
+    technical_support: `${dear}\n\nご不便をおかけして申し訳ありません。ご連絡いただき、ありがとうございます。お問い合わせを受け付けました。サポートエンジニアが内容を確認いたします。早期の解決のため、不具合が起きた時刻と、表示されているエラーメッセージをお知らせいただけますでしょうか。`,
+    billing: `${dear}\n\n請求の件でご連絡いただき、ありがとうございます。経理の担当者に引き継ぎ、内容を確認いたします。該当する請求書番号か注文番号をお知らせいただけますでしょうか。`,
+    partnership: `${dear}\n\n提携のご提案をいただき、ありがとうございます。ご提案の内容を検討させていただきます。貴社が想定されている提携の内容について、もう少し詳しくお聞かせいただけますでしょうか。`,
+    recruiting: `${dear}\n\nご関心をお寄せいただき、ありがとうございます。内容を確認し、条件が合う場合はあらためてご連絡いたします。ポートフォリオや職務経歴書のリンクがございましたら、お送りください。`,
+    spam_other: "ご連絡いただき、ありがとうございます。お問い合わせの内容を確認できなかったため、ご用件をもう少し詳しくお知らせください。",
+  };
+  const suggested_reply = replyByCategory[category];
+
+  // Supabase の列の名前と、分類・優先度・感情のコードは英語のページと同じ
+  const crm_record: Record<string, string | number | null> = {
+    name: name || null,
+    email: input.email?.trim() || null,
+    company,
+    category,
+    priority,
+    sentiment,
+    stage: routing.crm_stage,
+    assignee: routing.assignee,
+    requested_services: services_ja.join("、") || null,
+    budget,
+    timeline,
+    sla_hours: routing.sla_hours,
+  };
+
+  const emoji = priority === "high" ? "🔴" : priority === "medium" ? "🟡" : "⚪";
+  const slack_message =
+    `${emoji} *${CATEGORY_LABELS_JA[category]}* — 優先度: ${PRIORITY_JA[priority]}\n` +
+    `${summary}\n` +
+    `• 担当: ${routing.assignee}  • 対応期限: ${routing.sla_hours}時間  • ステータス: ${routing.crm_stage}` +
+    (input.email ? `\n• 返信先: ${input.email}` : "");
+
+  return {
+    category,
+    category_label: CATEGORY_LABELS_JA[category],
+    priority,
+    sentiment,
+    language,
+    summary,
+    entities: { company, budget, timeline, requested_services: services_ja },
     routing,
     suggested_reply,
     crm_record,
